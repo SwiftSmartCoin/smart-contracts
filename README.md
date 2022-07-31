@@ -17,4 +17,3 @@ node scripts/deploy.js
 ```shell
 hardhat run --network ropsten scripts/deploy.js
 ```!
-[Swift Introduction](https://user-images.githubusercontent.com/110170268/182017922-a12f64be-61fe-4ad5-ba71-c0baeda4d6bd.jpg)
