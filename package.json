@@ -1,0 +1,51 @@
+{
+  "name": "swift-coin-smart-contracts",
+  "version": "1.0.0",
+  "main": "deploy.js",
+  "scripts": {
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
+    "compile": "npx hardhat compile",
+    "eslint": "npx eslint '**/*.js'",
+    "eslint:fix": "npx eslint '**/*.js' --fix",
+    "lint": "npx prettier '**/*.{json,sol,md}' --check",
+    "lint:fix": "npx prettier '**/*.{json,sol,md}' --write",
+    "solhint": "npx solhint 'contracts/**/*.sol'",
+    "solhint:fix": "npx solhint 'contracts/**/*.sol' --fix"
+  },
+  "keywords": [],
+  "author": "Ameesha Agrawal",
+  "license": "ISC",
+  "dependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^1.0.2",
+    "hardhat": "^2.10.1",
+    "@openzeppelin/contracts": "^4.6.0",
+    "dotenv": "^16.0.1",
+    "eslint-plugin-n": "^15.2.3",
+    "hardhat-deploy": "^0.11.11",
+    "hardhat-deploy-ethers": "^0.3.0-beta.13",
+    "hardhat-spdx-license-identifier": "^2.0.3",
+    "hardhat-watcher": "^2.3.0",
+    "web3-provider-engine": "^16.0.4"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.6",
+    "@nomiclabs/hardhat-etherscan": "^3.0.4",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "chai": "^4.3.6",
+    "eslint": "^8.17.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "ethers": "^5.6.8",
+    "hardhat": "^2.9.7",
+    "hardhat-gas-reporter": "^1.0.8",
+    "prettier": "^2.6.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "solhint": "^3.3.7",
+    "solidity-coverage": "^0.7.21"
+  }
+}
