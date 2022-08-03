@@ -28,6 +28,7 @@ contract Crowdsale is Pausable, Ownable {
     error NotActive();
     error RefundNotActive();
     error NoRefundAvailable();
+    error ExceedICOSupply();
 
     // Token contract
     IERC20 public swft;
@@ -37,6 +38,7 @@ contract Crowdsale is Pausable, Ownable {
     uint256 public currentPhase;
 
     uint256 public totalBUSDRaised;
+    uint256 public totalTokensSold;
 
     mapping(address => uint256) public tokensBought;
     mapping(address => uint256) public busdSpent;
@@ -64,40 +66,50 @@ contract Crowdsale is Pausable, Ownable {
         uint256 busdSpent
     );
 
-    constructor(address _swft, address _treasury) {
+    constructor(
+        address _swft,
+        address _busd,
+        address _treasury
+    ) {
         swft = IERC20(_swft);
-        treasury = _treasury;
+        busd = IERC20(_busd);
 
-        busd = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+        treasury = _treasury;
 
         tokenPrices[1] = 1300000 gwei; // 0.0013 BUSD
         tokenPrices[2] = 2600000 gwei; // 0.0026 BUSD
         tokenPrices[3] = 3900000 gwei; // 0.0039 BUSD
-        tokenPrices[4] = 5400000 gwei; // 0.0054 BUSD
+        tokenPrices[4] = 5200000 gwei; // 0.0052 BUSD
         tokenPrices[5] = 6500000 gwei; // 0.0065 BUSD
     }
 
-    function getPhaseDetails()
+    function startCrowdsale() external onlyOwner {
+        _updatePhase(1, block.timestamp);
+    }
+
+    function getPhaseDetails(uint256 _phase)
         external
         view
         returns (
-            uint256 phaseNumber,
             uint256 busdReceived,
             uint256 tokensSold,
             uint256 tokenPrice,
             uint256 totalBUSDRaisedTillNow
         )
     {
-        PhaseDetails memory phase = phases[currentPhase];
+        PhaseDetails memory phase = phases[_phase];
 
-        phaseNumber = currentPhase;
         busdReceived = phase.busdReceived;
         tokensSold = phase.tokensSold;
-        tokenPrice = tokenPrices[currentPhase];
+        tokenPrice = tokenPrices[_phase];
         totalBUSDRaisedTillNow = totalBUSDRaised;
     }
 
-    function _beforePurchase(uint256 tokenAmount) internal {
+    function getCurrentTokenPrice() public view returns (uint256) {
+        return tokenPrices[currentPhase];
+    }
+
+    function _beforePurchase() internal {
         PhaseDetails memory phase = phases[currentPhase];
 
         // solhint-disable
@@ -105,54 +117,77 @@ contract Crowdsale is Pausable, Ownable {
             uint256 incrementBy = (block.timestamp - phase.startTimestamp) /
                 (PHASE_DURATION);
 
-            updatePhase(
-                currentPhase + (incrementBy),
-                phase.startTimestamp * (incrementBy)
-            );
+            _updatePhase(currentPhase + incrementBy, block.timestamp);
             return;
         }
-
-        if (phase.tokensSold + (tokenAmount) > ICO_SUPPLY_PER_PHASE) {
-            updatePhase(currentPhase + (1), block.timestamp);
-            return;
-        }
-    }
-
-    function getCurrentTokenPrice() public view returns (uint256) {
-        return tokenPrices[currentPhase];
-    }
-
-    function purchase(uint256 amount) external whenNotPaused {
-        _beforePurchase(amount);
-        uint256 tokenPrice = getCurrentTokenPrice();
-        uint256 busdNeeded = (amount * tokenPrice) / 1 ether;
-
-        if (busdNeeded < 50 ether) revert MinCap();
-
-        PhaseDetails storage phase = phases[currentPhase];
-
-        phase.busdReceived = phase.busdReceived + busdNeeded;
-        phase.tokensSold = phase.tokensSold + amount;
-
-        tokensBought[msg.sender] = tokensBought[msg.sender] + amount;
-        busdSpent[msg.sender] = busdSpent[msg.sender] + busdNeeded;
-
-        totalBUSDRaised += busdNeeded;
-
-        IERC20(busd).safeTransferFrom(msg.sender, treasury, busdNeeded);
-        IERC20(swft).safeTransferFrom(treasury, msg.sender, amount);
-
-        emit Purchase(msg.sender, amount, busdNeeded);
     }
 
     // @notice this function updates the phase and start timestamp
-    function updatePhase(uint256 _to, uint256 _startTimestamp) internal {
+    function _updatePhase(uint256 _to, uint256 _startTimestamp) internal {
         if (_to <= currentPhase) return;
         if (_to < 1 || _to > PHASES) revert InvalidPhase();
 
         currentPhase = currentPhase + 1;
         PhaseDetails storage phase = phases[currentPhase];
         phase.startTimestamp = _startTimestamp;
+    }
+
+    function _updatePurchaseDetails(
+        uint256 _phase,
+        uint256 _busd,
+        uint256 _tokens
+    ) internal {
+        PhaseDetails storage phase = phases[_phase];
+
+        phase.busdReceived = phase.busdReceived + _busd;
+        phase.tokensSold = phase.tokensSold + _tokens;
+    }
+
+    function _executePurchase(uint256 _amount)
+        internal
+        returns (uint256 busdNeeded)
+    {
+        if (_amount > (ICO_SUPPLY_PER_PHASE * PHASES) - totalTokensSold)
+            revert ExceedICOSupply();
+
+        uint256 total = _amount;
+
+        while (total > 0) {
+            PhaseDetails memory phase = phases[currentPhase];
+            uint256 tokenPrice = getCurrentTokenPrice();
+            uint256 diff = ICO_SUPPLY_PER_PHASE - phase.tokensSold;
+
+            uint256 multiplier;
+            if (diff < total) {
+                multiplier = diff;
+            } else {
+                multiplier = total;
+            }
+            uint256 phaseBUSD = (multiplier * tokenPrice) / 1 ether;
+            _updatePurchaseDetails(currentPhase, phaseBUSD, multiplier);
+            total -= multiplier;
+            busdNeeded += phaseBUSD;
+
+            if (total > 0) _updatePhase(currentPhase + 1, block.timestamp);
+        }
+    }
+
+    function purchase(uint256 amount) external whenNotPaused {
+        _beforePurchase();
+
+        uint256 busdNeeded = _executePurchase(amount);
+        if (busdNeeded < 50 ether) revert MinCap();
+
+        tokensBought[msg.sender] = tokensBought[msg.sender] + amount;
+        busdSpent[msg.sender] = busdSpent[msg.sender] + busdNeeded;
+
+        totalBUSDRaised += busdNeeded;
+        totalTokensSold += amount;
+
+        IERC20(busd).safeTransferFrom(msg.sender, treasury, busdNeeded);
+        IERC20(swft).safeTransferFrom(treasury, msg.sender, amount);
+
+        emit Purchase(msg.sender, amount, busdNeeded);
     }
 
     // @notice treasury needs to approve busd tokens to the contract in case sale
