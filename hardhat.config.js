@@ -1,16 +1,10 @@
-require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
+require("@nomicfoundation/hardhat-toolbox");
+require("hardhat-deploy");
+require("@nomiclabs/hardhat-etherscan");
+require("hardhat-deploy-ethers");
 
-// require("solidity-coverage");
-// require("@nomiclabs/hardhat-waffle");
-// require("@nomiclabs/hardhat-etherscan");
-// require("hardhat-deploy");
-// require("hardhat-deploy-ethers");
-// require("hardhat-gas-reporter");
-// require("hardhat-spdx-license-identifier");
-// require("hardhat-watcher");
-
-const accounts = [process.env.PRIVATE_KEY];
+const signers = [process.env.PRIVATE_KEY];
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -38,6 +32,11 @@ module.exports = {
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
+  },
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     currency: "USD",
@@ -46,11 +45,6 @@ module.exports = {
   },
   mocha: {
     timeout: 20000,
-  },
-  namedAccounts: {
-    deployer: {
-      default: 0,
-    },
   },
   solidity: {
     version: "0.8.15",
@@ -81,14 +75,14 @@ module.exports = {
     },
     bsc: {
       url: "https://bsc-dataseed.binance.org",
-      accounts,
+      signers,
       chainId: 56,
       live: true,
       saveDeployments: true,
     },
     "bsc-testnet": {
       url: "https://data-seed-prebsc-2-s3.binance.org:8545",
-      accounts,
+      signers,
       chainId: 97,
       live: true,
       saveDeployments: true,

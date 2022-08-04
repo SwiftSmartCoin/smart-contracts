@@ -27,7 +27,7 @@
     "dotenv": "^16.0.1",
     "eslint-plugin-n": "^15.2.3",
     "hardhat": "^2.10.1",
-    "hardhat-deploy": "^0.11.11",
+    "hardhat-deploy": "^0.11.12",
     "hardhat-deploy-ethers": "^0.3.0-beta.13",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "hardhat-watcher": "^2.3.0",

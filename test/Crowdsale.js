@@ -21,12 +21,13 @@ describe("Crowdsale", function () {
     const Token = await ethers.getContractFactory("SwiftCoin");
     const Crowdsale = await ethers.getContractFactory("Crowdsale");
 
-    const busd = await Token.deploy();
-    const swft = await Token.deploy();
+    const busd = await Token.deploy(owner.address);
+    const swft = await Token.deploy(owner.address);
 
     const crowdsale = await Crowdsale.deploy(
       swft.address,
       busd.address,
+      owner.address,
       owner.address
     );
 
@@ -34,7 +35,6 @@ describe("Crowdsale", function () {
     await busd.transfer(user2.address, toWei(200000000));
 
     await swft.approve(crowdsale.address, toWei(200000000));
-
     await crowdsale.startCrowdsale();
 
     return { busd, swft, crowdsale, owner, user1, user2 };

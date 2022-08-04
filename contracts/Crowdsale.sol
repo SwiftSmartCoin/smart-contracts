@@ -39,6 +39,7 @@ contract Crowdsale is Pausable, Ownable {
 
     uint256 public totalBUSDRaised;
     uint256 public totalTokensSold;
+    uint256 public startTimestamp;
 
     mapping(address => uint256) public tokensBought;
     mapping(address => uint256) public busdSpent;
@@ -69,12 +70,14 @@ contract Crowdsale is Pausable, Ownable {
     constructor(
         address _swft,
         address _busd,
-        address _treasury
+        address _treasury,
+        address _owner
     ) {
         swft = IERC20(_swft);
         busd = IERC20(_busd);
 
         treasury = _treasury;
+        transferOwnership(_owner);
 
         tokenPrices[1] = 1300000 gwei; // 0.0013 BUSD
         tokenPrices[2] = 2600000 gwei; // 0.0026 BUSD
@@ -84,7 +87,8 @@ contract Crowdsale is Pausable, Ownable {
     }
 
     function startCrowdsale() external onlyOwner {
-        _updatePhase(1, block.timestamp);
+        startTimestamp = block.timestamp;
+        _updatePhase(1, startTimestamp);
     }
 
     function getPhaseDetails(uint256 _phase)
@@ -109,6 +113,21 @@ contract Crowdsale is Pausable, Ownable {
         return tokenPrices[currentPhase];
     }
 
+    function getCurrentPhase() external view returns (uint256 _phase) {
+        if (startTimestamp == 0) return 0;
+        PhaseDetails memory phase = phases[currentPhase];
+
+        _phase = currentPhase;
+        if (block.timestamp - (phase.startTimestamp) > PHASE_DURATION) {
+            uint256 incrementBy = (block.timestamp - phase.startTimestamp) /
+                (PHASE_DURATION);
+            incrementBy = incrementBy > 5 ? 5 : incrementBy;
+            _phase = currentPhase + incrementBy;
+        }
+
+        _phase = _phase > 5 ? 5 : _phase;
+    }
+
     function _beforePurchase() internal {
         PhaseDetails memory phase = phases[currentPhase];
 
@@ -117,7 +136,10 @@ contract Crowdsale is Pausable, Ownable {
             uint256 incrementBy = (block.timestamp - phase.startTimestamp) /
                 (PHASE_DURATION);
 
-            _updatePhase(currentPhase + incrementBy, block.timestamp);
+            _updatePhase(
+                currentPhase + incrementBy,
+                startTimestamp + (PHASE_DURATION * incrementBy)
+            );
             return;
         }
     }

@@ -8,7 +8,7 @@ contract SwiftCoin is ERC20 {
     string private constant NAME = "Swift";
     string private constant SYMBOL = "SWFT";
 
-    constructor() ERC20(NAME, SYMBOL) {
-        _mint(msg.sender, INITIAL_SUPPLY);
+    constructor(address _admin) ERC20(NAME, SYMBOL) {
+        _mint(_admin, INITIAL_SUPPLY);
     }
 }
